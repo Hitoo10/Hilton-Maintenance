@@ -1,0 +1,9 @@
+node_modules/
+.git/
+.expo/
+dist/
+backup/
+repair-draft/
+.env
+.env.*
+supabase/
