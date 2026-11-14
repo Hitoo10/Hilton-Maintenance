@@ -35,3 +35,12 @@ file_size_limit = "20MiB"
 [edge_runtime]
 enabled = true
 policy = "per_worker"
+
+[functions.register-user]
+verify_jwt = false
+
+[functions.username-login]
+verify_jwt = false
+
+[functions.setup-admin-pin]
+verify_jwt = false
