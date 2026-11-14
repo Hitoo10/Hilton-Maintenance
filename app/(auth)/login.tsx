@@ -16,7 +16,7 @@ import {
 } from '@/components/ui';
 import { invokeFunction, supabase } from '@/lib/supabase';
 import { useAuth } from '@/state/AuthContext';
-import { isValidPin, normalizeUsername } from '@/utils/validation';
+import { isStrongPassword, normalizeUsername } from '@/utils/validation';
 import { ar } from '@/lib/labels';
 
 type LoginResponse = {
@@ -28,13 +28,13 @@ export default function LoginScreen() {
   const { refreshProfile } = useAuth();
 
   const [username, setUsername] = useState('');
-  const [pin, setPin] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   async function login() {
     const name = normalizeUsername(username);
 
-    if (name.length < 3 || !isValidPin(pin)) {
+    if (name.length < 3 || !isStrongPassword(password)) {
       Alert.alert(ar.login, ar.wrongCredentials);
       return;
     }
@@ -44,7 +44,7 @@ export default function LoginScreen() {
     try {
       const res = await invokeFunction<LoginResponse>(
         'username-login',
-        { username: name, pin }
+        { username: name, password }
       );
 
       if (!res.token_hash) {
@@ -103,12 +103,10 @@ export default function LoginScreen() {
             />
 
             <Input
-              placeholder="الرقم السري المكوّن من 4 أرقام"
-              keyboardType="number-pad"
-              maxLength={4}
+              placeholder={ar.password}
               secureTextEntry
-              value={pin}
-              onChangeText={(value) => setPin(value.replace(/[^0-9]/g, '').slice(0, 4))}
+              value={password}
+              onChangeText={setPassword}
             />
 
             <Button title={ar.login} onPress={login} loading={loading} />
