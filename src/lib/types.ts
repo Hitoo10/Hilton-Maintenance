@@ -2,7 +2,7 @@ export type Role = 'admin' | 'technician';
 export type TaskStatus = 'New' | 'In Progress' | 'Pending' | 'Completed';
 export type Priority = 'Low' | 'Medium' | 'High' | 'Critical';
 export type Category = 'HVAC' | 'Electrical' | 'Plumbing' | 'Cold Rooms' | 'Freezing Rooms' | 'Chillers' | 'Refrigeration' | 'General';
-export interface Profile { id: string; team_id: string | null; username: string; role: Role; status: 'pending'|'active'|'disabled'; avatar_url: string | null; current_shift_id: string | null; created_at: string; }
+export interface Profile { id: string; team_id: string | null; username: string; job_title: string | null; role: Role; status: 'pending'|'active'|'disabled'; avatar_url: string | null; current_shift_id: string | null; created_at: string; }
 export interface Shift { id: string; team_id: string; name: string; start_time: string; end_time: string; is_active: boolean; }
 export interface Task {
   id: string; team_id: string; title: string; description: string; location: string; room_number?: string | null; floor?: string | null;
