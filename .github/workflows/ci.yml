@@ -1,0 +1,52 @@
+name: Hilton Maintenance CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  app-checks:
+    name: Expo and TypeScript checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript check
+        run: npm run typecheck
+
+  edge-function-checks:
+    name: Supabase Edge Function checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Check register-user
+        run: deno check supabase/functions/register-user/index.ts
+
+      - name: Check username-login
+        run: deno check supabase/functions/username-login/index.ts
+
+      - name: Check setup-admin-pin
+        run: deno check supabase/functions/setup-admin-pin/index.ts
