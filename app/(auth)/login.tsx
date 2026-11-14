@@ -20,10 +20,7 @@ import { isValidPin, normalizeUsername } from '@/utils/validation';
 import { ar } from '@/lib/labels';
 
 type LoginResponse = {
-  session?: {
-    access_token?: string;
-    refresh_token?: string;
-  };
+  token_hash?: string;
 };
 
 export default function LoginScreen() {
@@ -50,17 +47,15 @@ export default function LoginScreen() {
         { username: name, pin }
       );
 
-      const accessToken = res.session?.access_token;
-      const refreshToken = res.session?.refresh_token;
-
-      if (!accessToken || !refreshToken) {
-        throw new Error('Invalid session response');
+      if (!res.token_hash) {
+        throw new Error('Invalid token response');
       }
 
-      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken,
-      });
+      const { data: sessionData, error: sessionError } =
+        await supabase.auth.verifyOtp({
+          token_hash: res.token_hash,
+          type: 'magiclink',
+        });
 
       if (sessionError) throw sessionError;
 
