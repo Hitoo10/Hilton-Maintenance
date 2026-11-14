@@ -3,15 +3,15 @@ import { Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native'
 import { useRouter } from 'expo-router';
 import { Screen, Card, Title, Subtitle, Button, Input } from '@/components/ui';
 import { invokeFunction } from '@/lib/supabase';
-import { isValidPin, normalizeUsername } from '@/utils/validation';
+import { isStrongPassword, normalizeUsername } from '@/utils/validation';
 import { ar } from '@/lib/labels';
 
 export default function RegisterScreen() {
   const router = useRouter();
   const [username, setUsername] = useState('');
   const [jobTitle, setJobTitle] = useState('');
-  const [pin, setPin] = useState('');
-  const [confirmPin, setConfirmPin] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   async function register() {
@@ -22,12 +22,12 @@ export default function RegisterScreen() {
       return Alert.alert(ar.createAccount, 'اسم المستخدم يجب أن يكون من 3 إلى 32 حرفًا');
     }
 
-    if (!isValidPin(pin)) {
-      return Alert.alert(ar.createAccount, 'الرقم السري يجب أن يتكون من 4 أرقام بالضبط');
+    if (!isStrongPassword(password)) {
+      return Alert.alert(ar.createAccount, 'كلمة المرور يجب أن تكون 8 أحرف على الأقل وتتضمن حرفًا كبيرًا وحرفًا صغيرًا ورقمًا');
     }
 
-    if (pin !== confirmPin) {
-      return Alert.alert(ar.createAccount, 'الرقم السري وتأكيده غير متطابقين');
+    if (password !== confirmPassword) {
+      return Alert.alert(ar.createAccount, ar.passwordMismatch);
     }
 
     setLoading(true);
@@ -39,7 +39,7 @@ export default function RegisterScreen() {
         ok?: boolean;
       }>('register-user', {
         username: name,
-        pin,
+        password,
         job_title: job || null,
       });
 
@@ -88,21 +88,17 @@ export default function RegisterScreen() {
             />
 
             <Input
-              placeholder="رقم سري من 4 أرقام"
-              keyboardType="number-pad"
-              maxLength={4}
+              placeholder={ar.password}
               secureTextEntry
-              value={pin}
-              onChangeText={(value) => setPin(value.replace(/[^0-9]/g, '').slice(0, 4))}
+              value={password}
+              onChangeText={setPassword}
             />
 
             <Input
-              placeholder="تأكيد الرقم السري"
-              keyboardType="number-pad"
-              maxLength={4}
+              placeholder={ar.confirmPassword}
               secureTextEntry
-              value={confirmPin}
-              onChangeText={(value) => setConfirmPin(value.replace(/[^0-9]/g, '').slice(0, 4))}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
             />
 
             <Button title={ar.createAccount} onPress={register} loading={loading} />
