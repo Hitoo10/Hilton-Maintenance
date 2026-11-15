@@ -7,11 +7,15 @@ This repository contains source code, SQL migrations, EAS configuration, and bui
 
 ## Setup
 1. Create a Supabase project.
-2. Apply `supabase/migrations/0001_init.sql` using the Supabase SQL editor or Supabase CLI.
-3. Enable Realtime for the tables required by the app, including tasks, task comments, messages, notifications, handovers, and critical alerts where present in the schema.
-4. Configure Edge Function secrets and deploy the required functions:
+2. Apply both migrations in order:
+   - `supabase/migrations/0001_init.sql`
+   - `supabase/migrations/0002_auth_pin_alignment.sql`
+   
+   Use the Supabase SQL editor or Supabase CLI. Migration 0002 adds the `job_title` field and the protected PIN credentials table required by the current registration/login functions.
+3. Enable Realtime for the tables used by the app, including `tasks`, `task_comments`, `messages`, `notifications`, and `handovers`.
+4. Configure the Edge Function secrets. Keep the service-role key and PIN secrets server-side only:
    ```bash
-   supabase secrets set SUPABASE_SERVICE_ROLE_KEY=... ADMIN_SETUP_CODE=change-me
+   supabase secrets set SUPABASE_SERVICE_ROLE_KEY=... PIN_PEPPER=... ADMIN_PIN_SETUP_TOKEN=...
    supabase functions deploy register-user
    supabase functions deploy username-login
    supabase functions deploy setup-admin-pin
@@ -23,26 +27,28 @@ This repository contains source code, SQL migrations, EAS configuration, and bui
    npm ci
    npm run typecheck
    ```
+   For EAS cloud builds, add the same two `EXPO_PUBLIC_*` values to the EAS environment used by the build profile. Do not add `SUPABASE_SERVICE_ROLE_KEY`, `PIN_PEPPER`, or `ADMIN_PIN_SETUP_TOKEN` to the mobile app or EAS public build variables.
 
 ## Authentication model
 Supabase Auth uses email internally. Usernames are resolved through Edge Functions:
-- Registration normalizes the username and creates the corresponding internal auth identity and profile, subject to the configured invitation/admin approval flow.
-- Username login resolves the username and verifies the password through the Edge Function.
-- The Supabase service-role key must remain only in Edge Function secrets. Never place it in the mobile app.
+- Registration normalizes the username, creates an internal auth identity and profile, and leaves the profile pending until an admin activates it.
+- Username login verifies the four-digit PIN through the Edge Function and returns a Supabase Auth token hash.
+- The Supabase service-role key and PIN pepper must remain only in Edge Function secrets. Never place them in the mobile app.
 
 ## Build APK
-Configure EAS credentials and project ID first, then run:
+The EAS project ID and Android application ID are configured in `app.json`. Confirm that the EAS account owner has access to that project and that the required Android signing credentials are available, then run:
 ```bash
 eas build --platform android --profile preview
+
 eas build --platform android --profile production
 ```
-Use the preview profile for internal testing and production only after signing credentials and release configuration are verified.
+The `preview` and `production` profiles are both configured to produce APK files. Use preview for internal testing; use production only after signing credentials and release configuration are verified.
 
 ## Required manual verification
 - Install the same APK on two physical Android devices.
 - Create and update tasks; confirm Realtime synchronization.
 - Test handover submission and incoming confirmation/rejection with a reason.
-- Test group/private chat, unread counts, and image messages.
+- Test group chat and message synchronization.
 - Verify notification permission and delivery.
 - Verify role-based access and audit behavior with admin and technician accounts.
 
@@ -61,8 +67,8 @@ Use the preview profile for internal testing and production only after signing c
 A reviewed UI redesign is staged in `src/features/internal-content-redesign/`. It is intentionally not connected to active Expo Router routes yet. Read `docs/internal-content-redesign/INTEGRATION_GUIDE.md`, `FILE_MAP.md`, and `REVIEW_NOTES.md` before integration. Existing routes and backend/authentication behavior remain authoritative.
 
 ## Important files
-- `supabase/migrations/0001_init.sql` — schema, indexes, RLS, and database triggers.
+- `supabase/migrations/0001_init.sql` and `0002_auth_pin_alignment.sql` — schema, indexes, RLS, triggers, and PIN credential storage.
 - `supabase/functions/*/index.ts` — username and admin setup Edge Functions.
-- `src/lib/supabase.ts` — Supabase client and session storage.
+- `src/lib/supabase.ts` — Supabase client and secure session storage.
 - `src/state/AuthContext.tsx` — authentication state and profile loading.
 - `app/*` — Expo Router screens.
