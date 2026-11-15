@@ -34,7 +34,7 @@ This repository contains source code, SQL migrations, EAS configuration, and bui
 Supabase Auth uses email internally. Usernames are resolved through Edge Functions:
 - Registration normalizes the username, creates an internal auth identity and profile, and leaves the profile pending until an admin activates it.
 - Username login verifies the four-digit PIN through the Edge Function and returns a Supabase Auth token hash.
-- PIN login is throttled in the database: up to 5 attempts per username and 20 attempts per source IP in a rolling 15-minute window. Successful authentication clears the username bucket. Raw usernames and IP addresses are not stored in the rate-limit table.
+- PIN login is throttled in the database: up to 5 attempts per username and 20 attempts per source IP in a 15-minute window. Successful authentication clears the username bucket. Raw usernames and IP addresses are not stored in the rate-limit table.
 - The Supabase service-role key and PIN pepper must remain only in Edge Function secrets. Never place them in the mobile app.
 
 ## Build APK
