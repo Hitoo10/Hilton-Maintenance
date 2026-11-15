@@ -76,6 +76,14 @@ jobs:
           cd android
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon --console=plain
+          APK="$(find app/build/outputs/apk -type f -name '*.apk' -print -quit)"
+          if [ -z "$APK" ]; then
+            echo "Gradle completed but did not produce an APK under android/app/build/outputs/apk"
+            find app/build/outputs -maxdepth 5 -type f -print || true
+            exit 1
+          fi
+          mkdir -p app/build/outputs/apk/release
+          cp "$APK" app/build/outputs/apk/release/app-release.apk
       - name: Boot emulator, install app, and verify launch without Metro
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -148,6 +156,14 @@ jobs:
           cd android
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon --console=plain
+          APK="$(find app/build/outputs/apk -type f -name '*.apk' -print -quit)"
+          if [ -z "$APK" ]; then
+            echo "Gradle completed but did not produce an APK under android/app/build/outputs/apk"
+            find app/build/outputs -maxdepth 5 -type f -print || true
+            exit 1
+          fi
+          mkdir -p app/build/outputs/apk/release
+          cp "$APK" app/build/outputs/apk/release/app-release.apk
       - name: Verify APK bundle and signature
         run: |
           APK="android/app/build/outputs/apk/release/app-release.apk"
