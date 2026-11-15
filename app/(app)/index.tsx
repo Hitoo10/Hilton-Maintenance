@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { FlatList, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { Alert, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Screen, Card, Title, Subtitle, Badge, Button } from '@/components/ui';
 import { getDashboard, priorityColor, statusColor } from '@/services/api';
@@ -15,14 +15,26 @@ export default function Dashboard() {
   const { profile, signOut } = useAuth();
   const [data, setData] = useState<any>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const load = async () => { setRefreshing(true); try { setData(await getDashboard()); } finally { setRefreshing(false); } };
-  useFocusEffect(useCallback(() => { load(); }, []));
+
+  const load = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      setData(await getDashboard());
+    } catch (error) {
+      Alert.alert('تعذر تحميل لوحة التحكم', error instanceof Error ? error.message : 'حدث خطأ غير متوقع');
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
+
+  useFocusEffect(useCallback(() => { void load(); }, [load]));
+
   return (
     <Screen>
       <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} />}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <View><Title>{profile?.username ?? 'فني'}</Title><Subtitle>فريق الصيانة</Subtitle></View>
-          <Button title="خروج" variant="ghost" onPress={signOut} />
+          <Button title="خروج" variant="ghost" onPress={() => { void signOut().catch((error) => Alert.alert('تعذر تسجيل الخروج', error instanceof Error ? error.message : 'حدث خطأ')); }} />
         </View>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
           <Stat label="إجمالي المهام" value={data?.total ?? 0} color={colors.text} />
@@ -35,21 +47,21 @@ export default function Dashboard() {
         </View>
         <Card>
           <Text style={{ color: colors.text, fontWeight: '800', textAlign: 'right', marginBottom: 6 }}>الشيفت الحالي</Text>
-          {(data?.shifts ?? []).map((s: any) => <Text key={s.id} style={{ color: colors.muted, textAlign: 'right' }}>{s.name}: {s.start_time} - {s.end_time}</Text>)}
+          {(data?.shifts ?? []).map((shift: any) => <Text key={shift.id} style={{ color: colors.muted, textAlign: 'right' }}>{shift.name}: {shift.start_time} - {shift.end_time}</Text>)}
         </Card>
         <Card>
           <Text style={{ color: colors.text, fontWeight: '800', textAlign: 'right', marginBottom: 6 }}>آخر تسليم شيفت</Text>
           {data?.latestHandover ? <Text style={{ color: colors.muted, textAlign: 'right' }}>{data.latestHandover.status} • من {data.latestHandover.outgoing?.username ?? ''}</Text> : <Text style={{ color: colors.muted, textAlign: 'right' }}>لا يوجد</Text>}
         </Card>
         <Text style={{ color: colors.text, fontWeight: '900', textAlign: 'right', marginVertical: 8 }}>أحدث المهام</Text>
-        {(data?.latestTasks ?? []).map((t: Task) => (
-          <Card key={t.id}>
+        {(data?.latestTasks ?? []).map((task: Task) => (
+          <Card key={task.id}>
             <View style={{ flexDirection: 'row-reverse', justifyContent: 'space-between' }}>
-              <Badge label={t.priority} color={priorityColor(t.priority)} />
-              <Badge label={t.status} color={statusColor(t.status)} />
+              <Badge label={task.priority} color={priorityColor(task.priority)} />
+              <Badge label={task.status} color={statusColor(task.status)} />
             </View>
-            <Text style={{ color: colors.text, textAlign: 'right', marginTop: 8, fontWeight: '700' }}>{t.title}</Text>
-            <Text style={{ color: colors.muted, textAlign: 'right' }}>{t.location}</Text>
+            <Text style={{ color: colors.text, textAlign: 'right', marginTop: 8, fontWeight: '700' }}>{task.title}</Text>
+            <Text style={{ color: colors.muted, textAlign: 'right' }}>{task.location}</Text>
           </Card>
         ))}
       </ScrollView>
