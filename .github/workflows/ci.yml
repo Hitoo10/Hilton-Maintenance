@@ -83,7 +83,9 @@ jobs:
             exit 1
           fi
           mkdir -p app/build/outputs/apk/release
-          cp "$APK" app/build/outputs/apk/release/app-release.apk
+          if [ "$APK" != "app/build/outputs/apk/release/app-release.apk" ]; then
+            cp "$APK" app/build/outputs/apk/release/app-release.apk
+          fi
       - name: Boot emulator, install app, and verify launch without Metro
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -163,7 +165,9 @@ jobs:
             exit 1
           fi
           mkdir -p app/build/outputs/apk/release
-          cp "$APK" app/build/outputs/apk/release/app-release.apk
+          if [ "$APK" != "app/build/outputs/apk/release/app-release.apk" ]; then
+            cp "$APK" app/build/outputs/apk/release/app-release.apk
+          fi
       - name: Verify APK bundle and signature
         run: |
           APK="android/app/build/outputs/apk/release/app-release.apk"
