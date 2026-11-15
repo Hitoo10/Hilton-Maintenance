@@ -21,6 +21,7 @@ import { ar } from '@/lib/labels';
 
 type LoginResponse = {
   token_hash?: string;
+  retry_after_seconds?: number;
 };
 
 export default function LoginScreen() {
@@ -72,8 +73,11 @@ export default function LoginScreen() {
       }
 
       router.replace('/');
-    } catch {
-      Alert.alert(ar.login, ar.wrongCredentials);
+    } catch (error) {
+      const message = error instanceof Error && error.message
+        ? error.message
+        : ar.wrongCredentials;
+      Alert.alert(ar.login, message);
     } finally {
       setLoading(false);
     }
