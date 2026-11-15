@@ -8,6 +8,9 @@ create table if not exists public.pin_login_attempts (
   updated_at timestamptz not null default now()
 );
 
+create index if not exists pin_login_attempts_updated_at_idx
+  on public.pin_login_attempts (updated_at);
+
 alter table public.pin_login_attempts enable row level security;
 revoke all on table public.pin_login_attempts from public, anon, authenticated;
 grant all on table public.pin_login_attempts to service_role;
@@ -48,10 +51,17 @@ begin
     'hex'
   );
 
+  -- Always enforce the username bucket. Enforce the IP bucket only when
+  -- the edge gateway supplied a real source address.
   -- Lock buckets in a stable order to avoid deadlocks.
   for v_key, v_limit in
     select bucket_key, max_attempts
-    from (values (v_username_key, 5), (v_ip_key, 20)) as buckets(bucket_key, max_attempts)
+    from (
+      values
+        (v_username_key, 5, true),
+        (v_ip_key, 20, coalesce(nullif(trim(p_client_ip), ''), 'unknown') <> 'unknown')
+    ) as buckets(bucket_key, max_attempts, enabled)
+    where enabled
     order by bucket_key
   loop
     perform pg_advisory_xact_lock(hashtext(v_key));
