@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { FlatList, RefreshControl, Text, View } from 'react-native';
+import { Alert, FlatList, RefreshControl, Text, View } from 'react-native';
 import { Link, useFocusEffect } from 'expo-router';
 import { Screen, Card, Badge, Button, Input, EmptyState } from '@/components/ui';
 import { listTasks, priorityColor, statusColor } from '@/services/api';
@@ -13,8 +13,20 @@ export default function TasksScreen() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<TaskStatus | 'All'>('All');
   const [refreshing, setRefreshing] = useState(false);
-  const load = async () => { setRefreshing(true); try { setTasks(await listTasks(search, status)); } finally { setRefreshing(false); } };
-  useFocusEffect(useCallback(() => { load(); }, [search, status]));
+
+  const load = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      setTasks(await listTasks(search, status));
+    } catch (error) {
+      Alert.alert('تعذر تحميل المهام', error instanceof Error ? error.message : 'حدث خطأ غير متوقع');
+    } finally {
+      setRefreshing(false);
+    }
+  }, [search, status]);
+
+  useFocusEffect(useCallback(() => { void load(); }, [load]));
+
   return (
     <Screen>
       <View style={{ flexDirection: 'row-reverse', gap: 8, marginBottom: 8 }}>
@@ -31,9 +43,9 @@ export default function TasksScreen() {
       />
       <FlatList
         data={tasks}
-        keyExtractor={(t) => t.id}
+        keyExtractor={(task) => task.id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} />}
-        ListEmptyComponent={<EmptyState title="لا توجد مهام" />}
+        ListEmptyComponent={<EmptyState title={refreshing ? 'جارٍ تحميل المهام...' : 'لا توجد مهام'} />}
         renderItem={({ item }) => (
           <Link href={`/tasks/${item.id}`} asChild>
             <Card>
