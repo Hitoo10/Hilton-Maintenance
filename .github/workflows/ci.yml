@@ -47,8 +47,8 @@ jobs:
       - name: Bundle Android JavaScript
         run: npx expo export --platform android --output-dir dist-android-check
 
-  android-debug-build:
-    name: Generate and compile Android debug APK
+  android-release-build:
+    name: Generate standalone Android release APK
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -85,17 +85,25 @@ jobs:
       - name: Configure Gradle cache
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Compile debug APK
+      - name: Compile standalone release APK
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --console=plain
+          ./gradlew assembleRelease --no-daemon --console=plain
 
-      - name: Upload debug APK
+      - name: Verify APK bundle and signature
+        run: |
+          APK="android/app/build/outputs/apk/release/app-release.apk"
+          test -s "$APK"
+          unzip -l "$APK" | grep -E 'assets/index.android.bundle|assets/index.android.bundle.hbc'
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          "$APKSIGNER" verify --verbose "$APK"
+
+      - name: Upload standalone release APK
         uses: actions/upload-artifact@v4
         with:
-          name: hilton-maintenance-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: hilton-maintenance-release-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 7
 
