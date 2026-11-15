@@ -33,6 +33,9 @@ jobs:
       - name: Validate Expo app configuration
         run: npx expo config --type public
 
+      - name: Check Expo dependencies and project health
+        run: npx expo-doctor
+
       - name: Bundle Android JavaScript
         run: npx expo export --platform android --output-dir dist-android-check
 
