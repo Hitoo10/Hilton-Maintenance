@@ -13,21 +13,34 @@ export function TeamScreen() {
   const [profiles, setProfiles] = useState<Profile[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  const load = useCallback(async () => { setRefreshing(true); try { setProfiles(await listProfiles()); } finally { setRefreshing(false); } }, []);
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  const load = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      setProfiles(await listProfiles());
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
+
+  useFocusEffect(useCallback(() => { void load(); }, [load]));
 
   return (
     <Screen>
       <Text style={{ color: colors.text, fontSize: 20, fontWeight: '800', marginBottom: spacing(2) }}>فريق الصيانة</Text>
-      {profiles === null ? (<LoadingState />) : (
-        <FlatList data={profiles} keyExtractor={(p) => p.id} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} />}
-          ListEmptyComponent={<View style={{ padding: spacing(4) }}><Text style={{ color: colors.muted, textAlign: 'center' }}>لا يوجد أعضاء</Text></View>}
+      {profiles === null ? <LoadingState /> : (
+        <FlatList
+          data={profiles}
+          keyExtractor={(profile) => profile.id}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} />}
+          ListEmptyComponent={<View style={{ padding: spacing(4) }}><Text style={{ color: colors.muted, textAlign: 'center' }}>لا يوجد أعضاء نشطون</Text></View>}
           renderItem={({ item }) => (
             <View style={{ backgroundColor: colors.card, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing(4), marginBottom: spacing(3) }}>
               <Text style={{ color: colors.text, fontSize: 16, fontWeight: '800' }}>{item.username}</Text>
-              <Text style={{ color: colors.muted, fontSize: 13, marginTop: 2 }}>{roleLabels[item.role]}</Text>
+              <Text style={{ color: colors.muted, fontSize: 13, marginTop: 2 }}>{item.job_title?.trim() || roleLabels[item.role]}</Text>
+              {item.job_title ? <Text style={{ color: colors.muted, fontSize: 12, marginTop: 2 }}>{roleLabels[item.role]}</Text> : null}
             </View>
-          )} />
+          )}
+        />
       )}
     </Screen>
   );
