@@ -47,6 +47,36 @@ serve(async req => {
       auth: { persistSession: false, autoRefreshToken: false }
     });
 
+    const clientIp =
+      req.headers.get('cf-connecting-ip')?.trim() ||
+      req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      'unknown';
+
+    const rateLimit = await admin.rpc('consume_pin_login_attempt', {
+      p_username: name,
+      p_client_ip: clientIp,
+    });
+
+    if (rateLimit.error) {
+      return json({ error: 'تعذر التحقق من محاولات تسجيل الدخول' }, 500);
+    }
+
+    const decision = rateLimit.data?.[0];
+    if (!decision || decision.allowed !== true) {
+      const retryAfter = Math.max(1, Number(decision?.retry_after_seconds) || 900);
+      return new Response(JSON.stringify({
+        error: 'تم تجاوز عدد محاولات تسجيل الدخول. حاول مرة أخرى بعد قليل.',
+        retry_after_seconds: retryAfter,
+      }), {
+        status: 429,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+          'Retry-After': String(retryAfter),
+        },
+      });
+    }
+
     const p = await admin.from('profiles')
       .select('id,team_id,status,username')
       .eq('normalized_username', name).maybeSingle();
@@ -63,6 +93,13 @@ serve(async req => {
     const calculated = await hashPin(pin, p.data.id, pepper);
     if (!safeEqual(calculated, c.data.pin_hash))
       return json({ error: 'اسم المستخدم أو الرقم السري غير صحيح' }, 401);
+
+    const reset = await admin.rpc('reset_pin_login_attempt', {
+      p_username: name,
+    });
+    if (reset.error) {
+      return json({ error: 'تعذر إكمال تسجيل الدخول بأمان' }, 500);
+    }
 
     const authUser = await admin.auth.admin.getUserById(p.data.id);
     const actualEmail = authUser.data?.user?.email;
